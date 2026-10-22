@@ -1,0 +1,73 @@
+name: Build FitzGame APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Crear estructura Android
+        run: |
+          mv lib /tmp/lib_backup
+          flutter create . --platforms=android --org com.fitzgame --project-name fitzgame
+          rm -rf lib
+          mv /tmp/lib_backup lib
+
+      - name: Configurar permisos de FitzGame
+        run: |
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p).read()
+
+          permissions = '''<uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>'''
+
+          service = '''<service
+                  android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
+                  android:exported="false"
+                  android:foregroundServiceType="specialUse">
+                  <property
+                      android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                      android:value="Muestra el asistente gamer Fitz como burbuja flotante."/>
+              </service>'''
+
+          s = s.replace('<application', permissions + '
+    <application', 1)
+          s = s.replace('</application>', service + '
+    </application>', 1)
+
+          open(p, 'w').write(s)
+          PY
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Compilar APK
+        run: flutter build apk --release
+
+      - name: Subir APK para descargar
+        uses: actions/upload-artifact@v4
+        with:
+          name: FitzGame-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
