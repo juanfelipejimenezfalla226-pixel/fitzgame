@@ -1,0 +1,17 @@
+name: fitzgame
+description: FitzGame - Asistente gamer con burbuja flotante
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_overlay_window: ^0.4.5
+  permission_handler: ^13.0.2
+  shared_preferences: ^2.5.6
+
+flutter:
+  uses-material-design: true
